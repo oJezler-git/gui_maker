@@ -1,6 +1,6 @@
 import os
 import zipfile
-from tkinter import Tk, filedialog
+from tkinter import Tk, filedialog, simpledialog, messagebox
 from PIL import Image
 
 def extract_files(file_path, extract_to):
@@ -20,12 +20,14 @@ def find_file(root_dir, target_dir, filename):
     print(f"{filename} not found in {root_dir}")
     return None
 
-def process_images(extract_to):
+def crop_and_save(image, crop_box, save_path):
+    cropped_image = image.crop(crop_box)
+    cropped_image.save(save_path)
+    return cropped_image
+
+def process_images_separate(extract_to):
     gui_path = find_file(extract_to, os.path.join('textures', 'gui'), 'gui.png')
     icons_path = find_file(extract_to, os.path.join('textures', 'gui'), 'icons.png')
-
-    print(f"Looking for gui.png at: {gui_path}")
-    print(f"Looking for icons.png at: {icons_path}")
 
     if not gui_path:
         print(f"Error: gui.png not found.")
@@ -37,49 +39,120 @@ def process_images(extract_to):
     gui_image = Image.open(gui_path)
     icons_image = Image.open(icons_path)
 
+    # Calculate scaling factor based on the image size
+    scale_factor_gui = gui_image.width / 256
+    scale_factor_icons = icons_image.width / 256
+
     # Crop specific sections from gui.png
-    gui_cropped_1 = gui_image.crop((0, 0, 40, 23)) # first 2 hotbar boxes
-    gui_cropped_2 = gui_image.crop((160, 0, 183, 23)) # end hotbar box
-    gui_cropped_3 = gui_image.crop((1, 23, 23, 45)) # selector
+    gui_crops = [
+        (0, 0, 40, 23),   # first 2 hotbar boxes
+        (160, 0, 183, 23), # end hotbar box
+        (1, 23, 23, 45)   # selector
+    ]
+    for i, (left, upper, right, lower) in enumerate(gui_crops):
+        crop_and_save(gui_image, 
+                      (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui),
+                      os.path.join(extract_to, f'gui_cropped_{i+1}.png'))
 
     # Crop specific sections from icons.png
-    icons_cropped_1 = icons_image.crop((52, 0, 61, 9))   # Full Heart
-    icons_cropped_2 = icons_image.crop((61, 0, 67, 9))   # Half Heart
-    icons_cropped_3 = icons_image.crop((16, 9, 25, 18))  # Armour Background
-    icons_cropped_4 = icons_image.crop((25, 9, 34, 18))  # Half Armour
-    icons_cropped_5 = icons_image.crop((34, 9, 43, 18))  # Full Armour
-    icons_cropped_6 = icons_image.crop((52, 9, 61, 18))  # Heart Background
-    # icons_cropped_7 = icons_image.crop((16, 36, 25, 45)) # Hunger
-    icons_cropped_8 = icons_image.crop((52, 27, 62, 36)) # Full Hunger
-    icons_cropped_9 = icons_image.crop((62, 27, 70, 36)) # Half Hunger
-    icons_cropped_10 = icons_image.crop((16, 27, 25, 36)) # Hunger Background
-    icons_cropped_11 = icons_image.crop((0, 64, 182, 69)) # XP bar background
-    icons_cropped_12 = icons_image.crop((0, 69, 182, 74)) # XP bar
+    icons_crops = [
+        (52, 0, 61, 9),   # Full Heart
+        (61, 0, 67, 9),   # Half Heart
+        (16, 9, 25, 18),  # Armour Background
+        (25, 9, 34, 18),  # Half Armour
+        (34, 9, 43, 18),  # Full Armour
+        (52, 9, 61, 18),  # Heart Background
+        (52, 27, 62, 36), # Full Hunger
+        (62, 27, 70, 36), # Half Hunger
+        (16, 27, 25, 36), # Hunger Background
+        (0, 64, 182, 69), # XP bar background
+        (0, 69, 182, 74)  # XP bar
+    ]
+    for i, (left, upper, right, lower) in enumerate(icons_crops):
+        crop_and_save(icons_image, 
+                      (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons),
+                      os.path.join(extract_to, f'icons_cropped_{i+1}.png'))
+
+    print(f"Separate images saved to {extract_to}")
+
+def process_images_exploded(extract_to):
+    gui_path = find_file(extract_to, os.path.join('textures', 'gui'), 'gui.png')
+    icons_path = find_file(extract_to, os.path.join('textures', 'gui'), 'icons.png')
+
+    if not gui_path:
+        print(f"Error: gui.png not found.")
+        return
+    if not icons_path:
+        print(f"Error: icons.png not found.")
+        return
+
+    gui_image = Image.open(gui_path)
+    icons_image = Image.open(icons_path)
+
+    # Calculate scaling factor based on the image size
+    scale_factor_gui = gui_image.width / 256
+    scale_factor_icons = icons_image.width / 256
+
+    # Crop specific sections from gui.png
+    gui_crops = [
+        (0, 0, 40, 23),   # first 2 hotbar boxes
+        (160, 0, 183, 23), # end hotbar box
+        (1, 23, 23, 45)   # selector
+    ]
+    cropped_gui_images = []
+    for left, upper, right, lower in gui_crops:
+        cropped_gui_images.append(gui_image.crop(
+            (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui)
+        ))
+
+    # Crop specific sections from icons.png
+    icons_crops = [
+        (52, 0, 61, 9),   # Full Heart
+        (61, 0, 67, 9),   # Half Heart
+        (16, 9, 25, 18),  # Armour Background
+        (25, 9, 34, 18),  # Half Armour
+        (34, 9, 43, 18),  # Full Armour
+        (52, 9, 61, 18),  # Heart Background
+        (52, 27, 62, 36), # Full Hunger
+        (62, 27, 70, 36), # Half Hunger
+        (16, 27, 25, 36), # Hunger Background
+        (0, 64, 182, 69), # XP bar background
+        (0, 69, 182, 74)  # XP bar
+    ]
+    cropped_icons_images = []
+    for left, upper, right, lower in icons_crops:
+        cropped_icons_images.append(icons_image.crop(
+            (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons)
+        ))
+
+    # Calculate total width and height for the new image
+    total_width = sum(img.width for img in cropped_gui_images + cropped_icons_images) + (len(cropped_gui_images) + len(cropped_icons_images) - 1) * 5
+    total_height = max(img.height for img in cropped_gui_images + cropped_icons_images) * 2 + 15  # 10 extra for gap between XP bar and background
 
     # Create a new image to arrange the cutouts
-    processed_image = Image.new('RGBA', (200, 50))  # Adjust the size as needed
+    processed_image = Image.new('RGBA', (total_width, total_height))
 
-    # Paste the cropped images
-    processed_image.paste(gui_cropped_1, (0, 0))
-    processed_image.paste(gui_cropped_2, (40, 0))
-    processed_image.paste(gui_cropped_3, (65, 0))
-    processed_image.paste(icons_cropped_1, (95, 0))
-    processed_image.paste(icons_cropped_2, (109, 0))
-    processed_image.paste(icons_cropped_3, (118, 0))
-    processed_image.paste(icons_cropped_4, (127, 0))
-    processed_image.paste(icons_cropped_5, (136, 0))
-    processed_image.paste(icons_cropped_6, (145, 0))
-    # processed_image.paste(icons_cropped_7, (0, 0))
-    processed_image.paste(icons_cropped_8, (154, 0))
-    processed_image.paste(icons_cropped_9, (164, 0))
-    processed_image.paste(icons_cropped_10, (174, 0))
-    processed_image.paste(icons_cropped_11, (0, 25))
-    processed_image.paste(icons_cropped_12, (0, 35))
+    # Paste the cropped images with padding
+    x_offset = 0
+    for cropped_image in cropped_gui_images:
+        processed_image.paste(cropped_image, (x_offset, 0))
+        x_offset += cropped_image.width + 5
 
+    x_offset = 0
+    for cropped_image in cropped_icons_images[:-2]:  # Exclude the last two (XP bar background and XP bar)
+        processed_image.paste(cropped_image, (x_offset, cropped_gui_images[0].height + 5))
+        x_offset += cropped_image.width + 5
 
-    output_path = os.path.join(extract_to, 'processed_gui.png')
+    # Paste the XP bar background and XP bar separately with a gap
+    xp_bar_background = cropped_icons_images[-2]
+    xp_bar = cropped_icons_images[-1]
+    xp_bar_y_offset = cropped_gui_images[0].height + xp_bar_background.height + 10
+    processed_image.paste(xp_bar_background, (x_offset, cropped_gui_images[0].height + 5))
+    processed_image.paste(xp_bar, (x_offset, xp_bar_y_offset))
+
+    output_path = os.path.join(extract_to, 'processed_gui_exploded.png')
     processed_image.save(output_path)
-    print(f"Processed GUI saved to {output_path}")
+    print(f"Exploded GUI saved to {output_path}")
 
 def main():
     Tk().withdraw()
@@ -89,7 +162,8 @@ def main():
         print("No file selected")
         return
 
-    extract_to = os.path.join(os.path.dirname(file_path), 'temp_extracted')
+    pack_name = os.path.splitext(os.path.basename(file_path))[0]
+    extract_to = os.path.join(os.path.dirname(file_path), f'{pack_name}_extracted')
     os.makedirs(extract_to, exist_ok=True)
 
     extract_files(file_path, extract_to)
@@ -98,7 +172,28 @@ def main():
         for name in files:
             print(os.path.join(root, name))
 
-    process_images(extract_to)
+    # ask the user for the output version
+    output_version = simpledialog.askstring("Output Version", "Enter output version (exploded(e), separate(s)):")
+
+    if output_version == "e" or output_version == "E" or output_version == "exploded":
+        process_images_exploded(extract_to)
+    elif output_version == "s" or output_version == "S" or output_version == "separate":
+        process_images_separate(extract_to)
+    else:
+        print("Invalid output version")
+
+    delete_extracted = messagebox.askyesno("Delete Extracted", "Do you want to delete the extracted pack directory?")
+    if delete_extracted:
+        import shutil
+        # List all files in the extraction directory before deleting
+        processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
+        shutil.rmtree(extract_to)
+        print(f"Deleted {extract_to}")
+
+        # Move the processed files back to the original directory
+        for file in processed_files:
+            shutil.move(file, os.path.dirname(extract_to))
+            print(f"Moved {file} to {os.path.dirname(extract_to)}")
 
 if __name__ == "__main__":
     main()
