@@ -1,7 +1,7 @@
 import os
 import zipfile
-from tkinter import Tk, filedialog, simpledialog, messagebox
-from PIL import Image
+from tkinter import Tk, filedialog, simpledialog, messagebox, Toplevel, Label, Button, Checkbutton, IntVar, StringVar, Radiobutton
+from PIL import Image, ImageEnhance
 
 def extract_files(file_path, extract_to):
     with zipfile.ZipFile(file_path, 'r') as zip_ref:
@@ -20,12 +20,15 @@ def find_file(root_dir, target_dir, filename):
     print(f"{filename} not found in {root_dir}")
     return None
 
-def crop_and_save(image, crop_box, save_path):
+def crop_and_save(image, crop_box, save_path, upscale_factor=1):
     cropped_image = image.crop(crop_box)
+    if upscale_factor > 1:
+        new_size = (int(cropped_image.width * upscale_factor), int(cropped_image.height * upscale_factor))
+        cropped_image = cropped_image.resize(new_size, Image.NEAREST)
     cropped_image.save(save_path)
     return cropped_image
 
-def process_images_separate(extract_to):
+def process_images_separate(extract_to, upscale_factor):
     gui_path = find_file(extract_to, os.path.join('textures', 'gui'), 'gui.png')
     icons_path = find_file(extract_to, os.path.join('textures', 'gui'), 'icons.png')
 
@@ -52,7 +55,7 @@ def process_images_separate(extract_to):
     for i, (left, upper, right, lower) in enumerate(gui_crops):
         crop_and_save(gui_image, 
                       (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui),
-                      os.path.join(extract_to, f'gui_cropped_{i+1}.png'))
+                      os.path.join(extract_to, f'gui_cropped_{i+1}.png'), upscale_factor)
 
     # Crop specific sections from icons.png
     icons_crops = [
@@ -71,11 +74,11 @@ def process_images_separate(extract_to):
     for i, (left, upper, right, lower) in enumerate(icons_crops):
         crop_and_save(icons_image, 
                       (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons),
-                      os.path.join(extract_to, f'icons_cropped_{i+1}.png'))
+                      os.path.join(extract_to, f'icons_cropped_{i+1}.png'), upscale_factor)
 
     print(f"Separate images saved to {extract_to}")
 
-def process_images_exploded(extract_to):
+def process_images_exploded(extract_to, upscale_factor):
     gui_path = find_file(extract_to, os.path.join('textures', 'gui'), 'gui.png')
     icons_path = find_file(extract_to, os.path.join('textures', 'gui'), 'icons.png')
 
@@ -101,9 +104,9 @@ def process_images_exploded(extract_to):
     ]
     cropped_gui_images = []
     for left, upper, right, lower in gui_crops:
-        cropped_gui_images.append(gui_image.crop(
-            (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui)
-        ))
+        cropped_gui_images.append(crop_and_save(gui_image,
+            (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui),
+            os.path.join(extract_to, f'gui_cropped_exploded_{left}_{upper}_{right}_{lower}.png'), upscale_factor))
 
     # Crop specific sections from icons.png
     icons_crops = [
@@ -121,9 +124,9 @@ def process_images_exploded(extract_to):
     ]
     cropped_icons_images = []
     for left, upper, right, lower in icons_crops:
-        cropped_icons_images.append(icons_image.crop(
-            (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons)
-        ))
+        cropped_icons_images.append(crop_and_save(icons_image,
+            (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons),
+            os.path.join(extract_to, f'icons_cropped_exploded_{left}_{upper}_{right}_{lower}.png'), upscale_factor))
 
     # Calculate total width and height for the new image
     total_width = sum(img.width for img in cropped_gui_images + cropped_icons_images) + (len(cropped_gui_images) + len(cropped_icons_images) - 1) * 5
@@ -154,6 +157,23 @@ def process_images_exploded(extract_to):
     processed_image.save(output_path)
     print(f"Exploded GUI saved to {output_path}")
 
+def process_essential_items(extract_to, upscale_factor):
+    essential_items = [
+        'bow_pulling_0.png', 
+        'diamond_sword.png', 
+        'diamond_pickaxe.png', 
+        'iron_pickaxe.png', 
+        'apple_golden.png', 
+        'ender_pearl.png'
+    ]
+    for item in essential_items:
+        item_path = find_file(extract_to, os.path.join('textures', 'items'), item)
+        if item_path:
+            item_image = Image.open(item_path)
+            crop_and_save(item_image, (0, 0, item_image.width, item_image.height), os.path.join(extract_to, f'essential_{item}'), upscale_factor)
+        else:
+            print(f"Error: {item} not found.")
+
 def main():
     Tk().withdraw()
     file_path = filedialog.askopenfilename(filetypes=[("Minecraft Packs", "*.zip *.mcpack")])
@@ -168,32 +188,56 @@ def main():
 
     extract_files(file_path, extract_to)
 
-    for root, dirs, files in os.walk(extract_to):
-        for name in files:
-            print(os.path.join(root, name))
+    def show_options():
+        options_window = Toplevel()
+        options_window.title("Options")
 
-    # ask the user for the output version
-    output_version = simpledialog.askstring("Output Version", "Enter output version (exploded(e), separate(s)):")
+        # Variables
+        output_version = StringVar(value="separate")
+        upscale_factor = IntVar(value=1)
+        delete_extracted = IntVar(value=0)
+        process_essential = IntVar(value=0)
 
-    if output_version == "e" or output_version == "E" or output_version == "exploded":
-        process_images_exploded(extract_to)
-    elif output_version == "s" or output_version == "S" or output_version == "separate":
-        process_images_separate(extract_to)
-    else:
-        print("Invalid output version")
+        Label(options_window, text="Choose Output Version:").pack(anchor='w')
+        Radiobutton(options_window, text="Exploded", variable=output_version, value="exploded").pack(anchor='w')
+        Radiobutton(options_window, text="Separate", variable=output_version, value="separate").pack(anchor='w')
 
-    delete_extracted = messagebox.askyesno("Delete Extracted", "Do you want to delete the extracted pack directory?")
-    if delete_extracted:
-        import shutil
-        # List all files in the extraction directory before deleting
-        processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
-        shutil.rmtree(extract_to)
-        print(f"Deleted {extract_to}")
+        Label(options_window, text="Upscale Factor:").pack(anchor='w')
+        upscale_options = [1, 2, 3, 4]
+        for option in upscale_options:
+            Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option).pack(anchor='w')
 
-        # Move the processed files back to the original directory
-        for file in processed_files:
-            shutil.move(file, os.path.dirname(extract_to))
-            print(f"Moved {file} to {os.path.dirname(extract_to)}")
+        Checkbutton(options_window, text="Delete Extracted Pack", variable=delete_extracted).pack(anchor='w')
+        Checkbutton(options_window, text="Process Essential Items", variable=process_essential).pack(anchor='w')
+
+        def apply_options():
+            if output_version.get() == "exploded":
+                process_images_exploded(extract_to, upscale_factor.get())
+            else:
+                process_images_separate(extract_to, upscale_factor.get())
+
+            if process_essential.get():
+                process_essential_items(extract_to, upscale_factor.get())
+
+            if delete_extracted.get():
+                import shutil
+                # Move processed files to original directory
+                processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
+                for file in processed_files:
+                    shutil.move(os.path.join(extract_to, file), os.path.dirname(extract_to))
+                    print(f"Moved {file} to {os.path.dirname(extract_to)}")
+                shutil.rmtree(extract_to)
+                print(f"Deleted {extract_to}")
+
+            options_window.destroy()
+
+        Button(options_window, text="Apply", command=apply_options).pack()
+
+        options_window.transient(Tk().mainloop())
+        options_window.grab_set()
+        options_window.wait_window(options_window)
+
+    show_options()
 
 if __name__ == "__main__":
     main()
