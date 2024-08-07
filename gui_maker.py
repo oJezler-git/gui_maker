@@ -223,16 +223,19 @@ def main():
                 import shutil
                 # Move processed files to original directory
                 processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
-                shutil.rmtree(extract_to)
-                print(f"Deleted {extract_to}")
-
                 for file in processed_files:
                     shutil.move(os.path.join(extract_to, file), os.path.dirname(extract_to))
                     print(f"Moved {file} to {os.path.dirname(extract_to)}")
+                shutil.rmtree(extract_to)
+                print(f"Deleted {extract_to}")
 
             options_window.destroy()
 
         Button(options_window, text="Apply", command=apply_options).pack()
+
+        options_window.transient(Tk().mainloop())
+        options_window.grab_set()
+        options_window.wait_window(options_window)
 
     show_options()
 
