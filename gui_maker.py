@@ -2,6 +2,7 @@ import os
 import zipfile
 from tkinter import Tk, filedialog, simpledialog, messagebox, Toplevel, Label, Button, Checkbutton, IntVar, StringVar, Radiobutton
 from PIL import Image, ImageEnhance
+import time
 
 def extract_files(file_path, extract_to):
     with zipfile.ZipFile(file_path, 'r') as zip_ref:
@@ -20,13 +21,18 @@ def find_file(root_dir, target_dir, filename):
     print(f"{filename} not found in {root_dir}")
     return None
 
+def upscale_image(image, upscale_factor):
+    new_size = (int(image.width * upscale_factor), int(image.height * upscale_factor))
+    upscaled_image = image.resize(new_size, Image.NEAREST)
+    return upscaled_image
+
 def crop_and_save(image, crop_box, save_path, upscale_factor=1):
     cropped_image = image.crop(crop_box)
     if upscale_factor > 1:
-        new_size = (int(cropped_image.width * upscale_factor), int(cropped_image.height * upscale_factor))
-        cropped_image = cropped_image.resize(new_size, Image.NEAREST)
+        cropped_image = upscale_image(cropped_image, upscale_factor)
     cropped_image.save(save_path)
     return cropped_image
+
 
 def process_images_separate(extract_to, upscale_factor):
     gui_path = find_file(extract_to, os.path.join('textures', 'gui'), 'gui.png')
@@ -157,14 +163,15 @@ def process_images_exploded(extract_to, upscale_factor):
     processed_image.save(output_path)
     print(f"Exploded GUI saved to {output_path}")
 
-def process_essential_items(extract_to, upscale_factor):
+def add_essential_items(extract_to, upscale_factor):
     essential_items = [
         'bow_pulling_0.png', 
         'diamond_sword.png', 
         'diamond_pickaxe.png', 
         'iron_pickaxe.png', 
         'apple_golden.png', 
-        'ender_pearl.png'
+        'ender_pearl.png',
+        'fireball.png' #thank larrzy lol skibidy sigma 
     ]
     for item in essential_items:
         item_path = find_file(extract_to, os.path.join('textures', 'items'), item)
@@ -175,7 +182,8 @@ def process_essential_items(extract_to, upscale_factor):
             print(f"Error: {item} not found.")
 
 def main():
-    Tk().withdraw()
+    main_window = Tk()
+    main_window.withdraw()
     file_path = filedialog.askopenfilename(filetypes=[("Minecraft Packs", "*.zip *.mcpack")])
 
     if not file_path:
@@ -189,26 +197,46 @@ def main():
     extract_files(file_path, extract_to)
 
     def show_options():
+
         options_window = Toplevel()
+        options_window.title('tk')
+        print("lmao")
         options_window.title("Options")
+        print("Make Options")
 
         # Variables
         output_version = StringVar(value="separate")
         upscale_factor = IntVar(value=1)
         delete_extracted = IntVar(value=0)
-        process_essential = IntVar(value=0)
+        add_essential = IntVar(value=0)
+        
+        tk_found = False
+
+        for window in main_window.winfo_children():
+            if window.winfo_class() == 'Toplevel':
+                if window.title() == 'tk':
+                    window.destroy()
+                    print("Killed 'tk' window")
+                    tk_found = True
+                elif window.title() == 'Options':
+                    print("Ignored 'Options' window")
+                else:
+                    print(f"Found a Toplevel window with title '{window.title()}' that is not 'tk' or 'Options'")
+
+        if not tk_found:
+            print("No 'tk' window found")
 
         Label(options_window, text="Choose Output Version:").pack(anchor='w')
         Radiobutton(options_window, text="Exploded", variable=output_version, value="exploded").pack(anchor='w')
         Radiobutton(options_window, text="Separate", variable=output_version, value="separate").pack(anchor='w')
 
         Label(options_window, text="Upscale Factor:").pack(anchor='w')
-        upscale_options = [1, 2, 3, 4]
+        upscale_options = [1, 2, 3, 4, 8]
         for option in upscale_options:
             Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option).pack(anchor='w')
 
-        Checkbutton(options_window, text="Delete Extracted Pack", variable=delete_extracted).pack(anchor='w')
-        Checkbutton(options_window, text="Process Essential Items", variable=process_essential).pack(anchor='w')
+        Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted).pack(anchor='w')
+        Checkbutton(options_window, text="Add Essential Items (Bow, Sword, Pickaxe, Gapple, Pearl)", variable=add_essential).pack(anchor='w')
 
         def apply_options():
             if output_version.get() == "exploded":
@@ -216,8 +244,8 @@ def main():
             else:
                 process_images_separate(extract_to, upscale_factor.get())
 
-            if process_essential.get():
-                process_essential_items(extract_to, upscale_factor.get())
+            if add_essential.get():
+                add_essential_items(extract_to, upscale_factor.get())
 
             if delete_extracted.get():
                 import shutil
@@ -236,6 +264,7 @@ def main():
         options_window.transient(Tk().mainloop())
         options_window.grab_set()
         options_window.wait_window(options_window)
+
 
     show_options()
 
