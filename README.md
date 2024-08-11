@@ -1,6 +1,6 @@
 # Minecraft Texture Pack GUI Maker
 
-This script extracts, processes, and modifies Minecraft texture packs to create GUI elements. It supports both Bedrock and Java editions.
+This script extracts, processes, and modifies Minecraft texture packs to create GUI elements to help aid with thumbnail making process. It supports both Bedrock and Java edition texture packs.
 
 ## Features
 
@@ -54,6 +54,7 @@ python3 gui_maker.py
 - Separate means they are cut out into separate pngs.
 - Ensure all dependencies are installed before running.
 - The script requires user interaction via GUI dialogs.
+- Credits to Dailzay for the idea.
 
 ## License
 
