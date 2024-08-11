@@ -207,9 +207,18 @@ def process_images_exploded(extract_to, upscale_factor, platform):
     processed_image.save(output_path)
     print(f"Exploded GUI saved to {output_path}")
 
-def add_essential_items(extract_to, upscale_factor, processed_dir):
+
+def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
     essential_items_dir = os.path.join(processed_dir, 'essential_items')
     os.makedirs(essential_items_dir, exist_ok=True)
+
+    if platform == 'bedrock':
+        target_dir = os.path.join('textures', 'items')
+    elif platform == 'java':
+        target_dir = os.path.join('assets', 'minecraft', 'textures', 'item')
+    else:
+        print("Error: Unsupported platform.")
+        return
 
     essential_items = [
         'bow_pulling_0.png', 
@@ -218,15 +227,17 @@ def add_essential_items(extract_to, upscale_factor, processed_dir):
         'iron_pickaxe.png', 
         'apple_golden.png', 
         'ender_pearl.png',
-        'fireball.png' #thank larrzy lol skibidi sigma 
+        'fireball.png' # lol bltck found the easter egg
     ]
+    
     for item in essential_items:
-        item_path = find_file(extract_to, os.path.join('textures', 'items'), item)
+        item_path = find_file(extract_to, target_dir, item)
         if item_path:
             item_image = Image.open(item_path)
             crop_and_save(item_image, (0, 0, item_image.width, item_image.height), os.path.join(essential_items_dir, f'essential_{item}'), upscale_factor)
         else:
             print(f"Error: {item} not found.")
+
 
 def apply_options():
     # create a new directory for processed files
@@ -328,7 +339,7 @@ def main():
                 process_images_separate(extract_to, upscale_factor.get(), platform)
 
             if add_essential.get():
-                add_essential_items(extract_to, upscale_factor.get(), processed_dir)
+                add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
 
             if delete_extracted.get():
                 import shutil
