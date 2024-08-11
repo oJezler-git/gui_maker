@@ -11,8 +11,6 @@ def extract_files(file_path, extract_to):
 def detect_platform(extract_to):
     # list the directories inside the extracted folder to identify bedrock or java
     subdirectories = [d for d in os.listdir(extract_to) if os.path.isdir(os.path.join(extract_to, d))]
-    for subdir in subdirectories:
-        print(f"Found", subdir)
 
     if not subdirectories:
         print("Error: No subdirectories found in the extracted folder.")
@@ -209,15 +207,7 @@ def process_images_exploded(extract_to, upscale_factor, platform):
     processed_image.save(output_path)
     print(f"Exploded GUI saved to {output_path}")
 
-def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
-    if platform == 'bedrock':
-        items_dir = os.path.join('textures', 'items')
-    elif platform == 'java':
-        items_dir = os.path.join('assets', 'minecraft', 'textures', 'item')
-    else:
-        print("Error: Unknown platform type.")
-        return
-
+def add_essential_items(extract_to, upscale_factor, processed_dir):
     essential_items_dir = os.path.join(processed_dir, 'essential_items')
     os.makedirs(essential_items_dir, exist_ok=True)
 
@@ -230,15 +220,13 @@ def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
         'ender_pearl.png',
         'fireball.png' #thank larrzy lol skibidi sigma 
     ]
-    
     for item in essential_items:
-        item_path = find_file(extract_to, items_dir, item)
+        item_path = find_file(extract_to, os.path.join('textures', 'items'), item)
         if item_path:
             item_image = Image.open(item_path)
             crop_and_save(item_image, (0, 0, item_image.width, item_image.height), os.path.join(essential_items_dir, f'essential_{item}'), upscale_factor)
         else:
-            print(f"Error: {item} not found in {platform} pack.")
-
+            print(f"Error: {item} not found.")
 
 def apply_options():
     # create a new directory for processed files
@@ -257,7 +245,7 @@ def apply_options():
         process_images_separate(extract_to, upscale_factor.get(), platform)
 
     if add_essential.get():
-        add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
+        add_essential_items(extract_to, upscale_factor.get(), processed_dir)
 
     if delete_extracted.get():
         import shutil
@@ -271,7 +259,6 @@ def apply_options():
         print(f"Deleted {extract_to}")
 
     options_window.destroy()
-
 
 def main():
     global file_path, pack_name
