@@ -21,6 +21,8 @@ This script extracts, processes, and modifies Minecraft texture packs to create 
 
 # FULLY AUTOMATED INSTALLATION:
 
+![tutorial](https://github.com/user-attachments/assets/07a7aa23-1fb8-4fcc-952a-f591b2a1c3e1)
+
 Run the automated setup using `run.bat`, or manually install the dependencies:
 
 
