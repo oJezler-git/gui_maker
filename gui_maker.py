@@ -174,7 +174,7 @@ def add_essential_items(extract_to, upscale_factor, processed_dir):
         'iron_pickaxe.png', 
         'apple_golden.png', 
         'ender_pearl.png',
-        'fireball.png' #thank larrzy lol skibidy sigma 
+        'fireball.png' #thank larrzy lol skibidi sigma 
     ]
     for item in essential_items:
         item_path = find_file(extract_to, os.path.join('textures', 'items'), item)
