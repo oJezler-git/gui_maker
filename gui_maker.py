@@ -2,12 +2,34 @@ import os
 import zipfile
 from tkinter import Tk, filedialog, simpledialog, messagebox, Toplevel, Label, Button, Checkbutton, IntVar, StringVar, Radiobutton
 from PIL import Image, ImageEnhance
-import time
 
 def extract_files(file_path, extract_to):
     with zipfile.ZipFile(file_path, 'r') as zip_ref:
         zip_ref.extractall(extract_to)
     print(f"Extracted {file_path} to {extract_to}")
+
+def detect_platform(extract_to):
+    # list the directories inside the extracted folder to identify bedrock or java
+    subdirectories = [d for d in os.listdir(extract_to) if os.path.isdir(os.path.join(extract_to, d))]
+
+    if not subdirectories:
+        print("Error: No subdirectories found in the extracted folder.")
+        return None
+
+    # cause theres one subdirectory (the pack itself)
+    pack_subdir = os.path.join(extract_to, subdirectories[0])
+
+    # find manifest.json or pack.mcmeta
+    if os.path.exists(os.path.join(pack_subdir, 'manifest.json')):
+        print("Bedrock Pack Detected")
+        return 'bedrock'
+    elif os.path.exists(os.path.join(pack_subdir, 'pack.mcmeta')):
+        print("Java Pack Detected")
+        return 'java'
+    
+    print("Error: Could not determine Bedrock or Java texure pack.")
+    return None
+
 
 def find_file(root_dir, target_dir, filename):
     target_dir = os.path.normpath(target_dir)
@@ -34,15 +56,26 @@ def crop_and_save(image, crop_box, save_path, upscale_factor=1):
     return cropped_image
 
 
-def process_images_separate(extract_to, upscale_factor):
-    gui_path = find_file(extract_to, os.path.join('textures', 'gui'), 'gui.png')
-    icons_path = find_file(extract_to, os.path.join('textures', 'gui'), 'icons.png')
+def process_images_separate(extract_to, upscale_factor, platform):
+    if platform == 'bedrock':
+        gui_filename = 'gui.png'
+        icons_filename = 'icons.png'
+        gui_path = find_file(extract_to, os.path.join('textures', 'gui'), gui_filename)
+        icons_path = find_file(extract_to, os.path.join('textures', 'gui'), icons_filename)
+    elif platform == 'java':
+        gui_filename = 'widgets.png'
+        icons_filename = 'icons.png'
+        gui_path = find_file(extract_to, os.path.join('assets', 'minecraft', 'textures', 'gui'), gui_filename)
+        icons_path = find_file(extract_to, os.path.join('assets', 'minecraft', 'textures', 'gui'), icons_filename)
+    else:
+        print("Error: Could not determine platform type.")
+        return
 
     if not gui_path:
-        print(f"Error: gui.png not found.")
+        print(f"Error: {gui_filename} not found.")
         return
     if not icons_path:
-        print(f"Error: icons.png not found.")
+        print(f"Error: {icons_filename} not found.")
         return
 
     gui_image = Image.open(gui_path)
@@ -84,15 +117,26 @@ def process_images_separate(extract_to, upscale_factor):
 
     print(f"Separate images saved to {extract_to}")
 
-def process_images_exploded(extract_to, upscale_factor):
-    gui_path = find_file(extract_to, os.path.join('textures', 'gui'), 'gui.png')
-    icons_path = find_file(extract_to, os.path.join('textures', 'gui'), 'icons.png')
+def process_images_exploded(extract_to, upscale_factor, platform):
+    if platform == 'bedrock':
+        gui_filename = 'gui.png'
+        icons_filename = 'icons.png'
+        gui_path = find_file(extract_to, os.path.join('textures', 'gui'), gui_filename)
+        icons_path = find_file(extract_to, os.path.join('textures', 'gui'), icons_filename)
+    elif platform == 'java':
+        gui_filename = 'widgets.png'
+        icons_filename = 'icons.png'
+        gui_path = find_file(extract_to, os.path.join('assets', 'minecraft', 'textures', 'gui'), gui_filename)
+        icons_path = find_file(extract_to, os.path.join('assets', 'minecraft', 'textures', 'gui'), icons_filename)
+    else:
+        print("Error: Could not determine platform type.")
+        return
 
     if not gui_path:
-        print(f"Error: gui.png not found.")
+        print(f"Error: {gui_filename} not found.")
         return
     if not icons_path:
-        print(f"Error: icons.png not found.")
+        print(f"Error: {icons_filename} not found.")
         return
 
     gui_image = Image.open(gui_path)
@@ -189,10 +233,16 @@ def apply_options():
     processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
     os.makedirs(processed_dir, exist_ok=True)
 
+    platform = detect_platform(extract_to)
+
+    if platform is None:
+        print("Error: Unable to detect the platform (Bedrock or Java).")
+        return
+
     if output_version.get() == "exploded":
-        process_images_exploded(extract_to, upscale_factor.get())
+        process_images_exploded(extract_to, upscale_factor.get(), platform)
     else:
-        process_images_separate(extract_to, upscale_factor.get())
+        process_images_separate(extract_to, upscale_factor.get(), platform)
 
     if add_essential.get():
         add_essential_items(extract_to, upscale_factor.get(), processed_dir)
@@ -266,10 +316,16 @@ def main():
             processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
             os.makedirs(processed_dir, exist_ok=True)
 
+            platform = detect_platform(extract_to)
+
+            if platform is None:
+                print("Error: Unable to detect the platform (Bedrock or Java).")
+                return
+
             if output_version.get() == "exploded":
-                process_images_exploded(extract_to, upscale_factor.get())
+                process_images_exploded(extract_to, upscale_factor.get(), platform)
             else:
-                process_images_separate(extract_to, upscale_factor.get())
+                process_images_separate(extract_to, upscale_factor.get(), platform)
 
             if add_essential.get():
                 add_essential_items(extract_to, upscale_factor.get(), processed_dir)
@@ -286,6 +342,7 @@ def main():
                 print(f"Deleted {extract_to}")
 
             options_window.destroy()
+
 
         Button(options_window, text="Apply", command=apply_options).pack()
 
