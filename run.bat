@@ -29,5 +29,12 @@ if %ERRORLEVEL% NEQ 0 (
     pip install Pillow
 )
 
+:: Check for ttkbootstrap (required for styling)
+pip show ttkbootstrap >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo Installing ttkbootstrap...
+    pip install ttkbootstrap
+)
+
 :: Run the Python script
 python gui_maker.py
