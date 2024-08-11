@@ -1,7 +1,10 @@
 import os
 import zipfile
 from tkinter import Tk, filedialog, simpledialog, messagebox, Toplevel, Label, Button, Checkbutton, IntVar, StringVar, Radiobutton
+from tkinter import *
+from tkinter import ttk
 from PIL import Image, ImageEnhance
+import ttkbootstrap as ttk
 
 def extract_files(file_path, extract_to):
     with zipfile.ZipFile(file_path, 'r') as zip_ref:
@@ -273,7 +276,7 @@ def apply_options():
 
 def main():
     global file_path, pack_name
-    main_window = Tk()
+    main_window = ttk.Window(themename="superhero")
     main_window.withdraw()
     file_path = filedialog.askopenfilename(filetypes=[("Minecraft Packs", "*.zip *.mcpack")])
 
@@ -288,10 +291,10 @@ def main():
     extract_files(file_path, extract_to)
 
     def show_options():
-
-        options_window = Toplevel()
-        options_window.title('tk')
+        # Create options window
+        options_window = ttk.Toplevel()
         options_window.title("Options")
+        options_window.geometry('600x500')
 
         # Variables
         output_version = StringVar(value="separate")
@@ -299,31 +302,21 @@ def main():
         delete_extracted = IntVar(value=0)
         add_essential = IntVar(value=0)
 
-        tk_found = False
+        # Widgets with modern styling and colors
+        ttk.Label(options_window, text="Choose Output Version:").pack(anchor='w', pady=10, padx=10)
+        ttk.Radiobutton(options_window, text="Exploded (Exploded Diagram, everything is exported to one PNG)", variable=output_version, value="exploded", bootstyle="primary").pack(anchor='w', padx=20)
+        ttk.Radiobutton(options_window, text="Separate (Seperated, everything is exported into speratate individual PNGs)", variable=output_version, value="separate", bootstyle="primary").pack(anchor='w', padx=20)
 
-        for window in main_window.winfo_children():
-            if window.winfo_class() == 'Toplevel':
-                if window.title() == 'tk':
-                    window.destroy()
-                    tk_found = True
-
-        if not tk_found:
-            print("No 'tk' window found")
-
-        Label(options_window, text="Choose Output Version:").pack(anchor='w')
-        Radiobutton(options_window, text="Exploded", variable=output_version, value="exploded").pack(anchor='w')
-        Radiobutton(options_window, text="Separate", variable=output_version, value="separate").pack(anchor='w')
-
-        Label(options_window, text="Upscale Factor:").pack(anchor='w')
+        ttk.Label(options_window, text="Upscale Factor:").pack(anchor='w', pady=10, padx=10)
         upscale_options = [1, 2, 3, 4, 8]
         for option in upscale_options:
-            Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option).pack(anchor='w')
+            ttk.Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option, bootstyle="info").pack(anchor='w', padx=20)
 
-        Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted).pack(anchor='w')
-        Checkbutton(options_window, text="Add Essential Items (Bow, Sword, Pickaxe, Gapple, Pearl)", variable=add_essential).pack(anchor='w')
+        ttk.Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted, bootstyle="success").pack(anchor='w', pady=10, padx=10)
+
+        ttk.Checkbutton(options_window, text="Add Essential Items (Bow, Sword, Pickaxe, Gapple, Pearl)", variable=add_essential, bootstyle="success").pack(anchor='w', padx=10)
 
         def apply_options():
-            # create a new directory for processed files
             processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
             os.makedirs(processed_dir, exist_ok=True)
 
@@ -343,19 +336,16 @@ def main():
 
             if delete_extracted.get():
                 import shutil
-                # Move processed files to the new directory
                 processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
                 for file in processed_files:
                     shutil.move(os.path.join(extract_to, file), processed_dir)
                     print(f"Moved {file} to {processed_dir}")
-
                 shutil.rmtree(extract_to)
                 print(f"Deleted {extract_to}")
 
             options_window.destroy()
 
-
-        Button(options_window, text="Apply", command=apply_options).pack()
+        ttk.Button(options_window, text="Apply", command=apply_options, bootstyle="outline-primary").pack(pady=20)
 
         options_window.transient(Tk().mainloop())
         options_window.grab_set()
