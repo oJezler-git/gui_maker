@@ -12,17 +12,24 @@ def extract_files(file_path, extract_to):
     print(f"Extracted {file_path} to {extract_to}")
 
 def detect_platform(extract_to):
-    # list the directories inside the extracted folder to identify bedrock or java
-    subdirectories = [d for d in os.listdir(extract_to) if os.path.isdir(os.path.join(extract_to, d))]
+    # check for manifest.json or pack.mcmeta directly in extract_to
+    if os.path.exists(os.path.join(extract_to, 'manifest.json')):
+        print("Bedrock Pack Detected")
+        return 'bedrock'
+    elif os.path.exists(os.path.join(extract_to, 'pack.mcmeta')):
+        print("Java Pack Detected")
+        return 'java'
 
+    # if not found, check in the first-level subdirectory
+    subdirectories = [d for d in os.listdir(extract_to) if os.path.isdir(os.path.join(extract_to, d))]
+    
     if not subdirectories:
         print("Error: No subdirectories found in the extracted folder.")
         return None
-
-    # cause theres one subdirectory (the pack itself)
+    
+    # assume the first subdirectory is the packs main directory
     pack_subdir = os.path.join(extract_to, subdirectories[0])
 
-    # find manifest.json or pack.mcmeta
     if os.path.exists(os.path.join(pack_subdir, 'manifest.json')):
         print("Bedrock Pack Detected")
         return 'bedrock'
@@ -30,11 +37,12 @@ def detect_platform(extract_to):
         print("Java Pack Detected")
         return 'java'
     
-    print("Error: Could not determine Bedrock or Java texure pack.")
+    print("Error: Could not determine Bedrock or Java texture pack.")
     return None
 
 
 def find_file(root_dir, target_dir, filename):
+    # first, search directly in the root directory
     target_dir = os.path.normpath(target_dir)
     for root, dirs, files in os.walk(root_dir):
         normalized_root = os.path.normpath(root)
@@ -43,7 +51,25 @@ def find_file(root_dir, target_dir, filename):
                 found_path = os.path.join(root, filename)
                 print(f"Found {filename} at {found_path}")
                 return found_path
-    print(f"{filename} not found in {root_dir}")
+
+    # if not found, search in the first-level subdirectory
+    subdirectories = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
+    if not subdirectories:
+        print(f"Error: No subdirectories found in {root_dir}")
+        return None
+
+    # the first subdirectory is the packs main directory
+    pack_subdir = os.path.join(root_dir, subdirectories[0])
+
+    for root, dirs, files in os.walk(pack_subdir):
+        normalized_root = os.path.normpath(root)
+        if target_dir in normalized_root:
+            if filename in files:
+                found_path = os.path.join(root, filename)
+                print(f"Found {filename} at {found_path}")
+                return found_path
+
+    print(f"{filename} not found in {root_dir} or its subdirectories")
     return None
 
 def upscale_image(image, upscale_factor):
