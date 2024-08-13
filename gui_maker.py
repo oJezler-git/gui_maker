@@ -232,8 +232,9 @@ def process_images_exploded(extract_to, upscale_factor, platform):
     processed_image.paste(xp_bar_background, (x_offset, cropped_gui_images[0].height + 5))
     processed_image.paste(xp_bar, (x_offset, xp_bar_y_offset))
 
-    output_path = os.path.join(extract_to, 'processed_gui_exploded.png')
+    output_path = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}', 'processed_gui_exploded.png')
     processed_image.save(output_path)
+
     print(f"Exploded GUI saved to {output_path}")
 
 
