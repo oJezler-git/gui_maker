@@ -234,8 +234,11 @@ def process_images_exploded(extract_to, upscale_factor, platform):
     processed_image.paste(xp_bar_background, (x_offset, cropped_gui_images[0].height + 5))
     processed_image.paste(xp_bar, (x_offset, xp_bar_y_offset))
 
+    new_size = (int(processed_image.width * upscale_factor), int(processed_image.height * upscale_factor))
+    upscale_processed_image = processed_image.resize(new_size, Image.NEAREST)
+
     output_path = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}', 'processed_gui_exploded.png')
-    processed_image.save(output_path)
+    upscale_processed_image.save(output_path)
 
     print(f"Exploded GUI saved to {output_path}")
 
@@ -306,82 +309,96 @@ def apply_options():
 
 def main():
     global file_path, pack_name
+
     main_window = ttk.Window(themename="superhero")
     main_window.withdraw()
-    file_path = filedialog.askopenfilename(filetypes=[("Minecraft Packs", "*.zip *.mcpack")])
 
-    if not file_path:
-        print("No file selected")
-        return
+    while True:
+        file_path = filedialog.askopenfilename(filetypes=[("Minecraft Packs", "*.zip *.mcpack")])
 
-    pack_name = os.path.splitext(os.path.basename(file_path))[0]
-    extract_to = os.path.join(os.path.dirname(file_path), f'{pack_name}_extracted')
-    os.makedirs(extract_to, exist_ok=True)
+        if not file_path:
+            print("No file selected")
+            break
 
-    extract_files(file_path, extract_to)
+        pack_name = os.path.splitext(os.path.basename(file_path))[0]
+        extract_to = os.path.join(os.path.dirname(file_path), f'{pack_name}_extracted')
 
-    def show_options():
-        # Create options window
-        options_window = ttk.Toplevel()
-        options_window.title("Options")
-        options_window.geometry('600x500')
+        # check if extraction directory already exists
+        if os.path.exists(extract_to):
+            response = messagebox.askyesno(
+                "Overwrite Existing Files",
+                f"The directory '{extract_to}' already exists. Do you want to overwrite it?"
+            )
+            if not response:
+                continue  # skip to the next iteration
 
-        # Variables
-        output_version = StringVar(value="separate")
-        upscale_factor = IntVar(value=1)
-        delete_extracted = IntVar(value=0)
-        add_essential = IntVar(value=0)
+        os.makedirs(extract_to, exist_ok=True)
+        extract_files(file_path, extract_to)
 
-        # Widgets with modern styling and colors
-        ttk.Label(options_window, text="Choose Output Version:").pack(anchor='w', pady=10, padx=10)
-        ttk.Radiobutton(options_window, text="Exploded (Exploded Diagram, everything is exported to one PNG)", variable=output_version, value="exploded", bootstyle="primary").pack(anchor='w', padx=20)
-        ttk.Radiobutton(options_window, text="Separate (Seperated, everything is exported into speratate individual PNGs)", variable=output_version, value="separate", bootstyle="primary").pack(anchor='w', padx=20)
+        def show_options():
+            # Create options window
+            options_window = ttk.Toplevel()
+            options_window.title("Options")
+            options_window.geometry('600x500')
 
-        ttk.Label(options_window, text="Upscale Factor:").pack(anchor='w', pady=10, padx=10)
-        upscale_options = [1, 2, 3, 4, 8]
-        for option in upscale_options:
-            ttk.Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option, bootstyle="info").pack(anchor='w', padx=20)
+            # Variables
+            output_version = StringVar(value="separate")
+            upscale_factor = IntVar(value=1)
+            delete_extracted = IntVar(value=0)
+            add_essential = IntVar(value=0)
 
-        ttk.Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted, bootstyle="success").pack(anchor='w', pady=10, padx=10)
+            # Widgets with modern styling and colors
+            ttk.Label(options_window, text="Choose Output Version:").pack(anchor='w', pady=10, padx=10)
+            ttk.Radiobutton(options_window, text="Exploded (Exploded Diagram, everything is exported to one PNG)", variable=output_version, value="exploded", bootstyle="primary").pack(anchor='w', padx=20)
+            ttk.Radiobutton(options_window, text="Separate (Seperated, everything is exported into speratate individual PNGs)", variable=output_version, value="separate", bootstyle="primary").pack(anchor='w', padx=20)
 
-        ttk.Checkbutton(options_window, text="Add Essential Items (Bow, Sword, Pickaxe, Gapple, Pearl)", variable=add_essential, bootstyle="success").pack(anchor='w', padx=10)
+            ttk.Label(options_window, text="Upscale Factor:").pack(anchor='w', pady=10, padx=10)
+            upscale_options = [1, 2, 3, 4, 8]
+            for option in upscale_options:
+                ttk.Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option, bootstyle="info").pack(anchor='w', padx=20)
 
-        def apply_options():
-            processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
-            os.makedirs(processed_dir, exist_ok=True)
+            ttk.Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted, bootstyle="success").pack(anchor='w', pady=10, padx=10)
 
-            platform = detect_platform(extract_to)
+            ttk.Checkbutton(options_window, text="Add Essential Items (Bow, Sword, Pickaxe, Gapple, Pearl)", variable=add_essential, bootstyle="success").pack(anchor='w', padx=10)
 
-            if platform is None:
-                print("Error: Unable to detect the platform (Bedrock or Java).")
-                return
+            def apply_options():
+                processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
+                os.makedirs(processed_dir, exist_ok=True)
 
-            if output_version.get() == "exploded":
-                process_images_exploded(extract_to, upscale_factor.get(), platform)
-            else:
-                process_images_separate(extract_to, upscale_factor.get(), platform)
+                platform = detect_platform(extract_to)
 
-            if add_essential.get():
-                add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
+                if platform is None:
+                    print("Error: Unable to detect the platform (Bedrock or Java).")
+                    return
 
-            if delete_extracted.get():
-                import shutil
-                processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
-                for file in processed_files:
-                    shutil.move(os.path.join(extract_to, file), processed_dir)
-                    print(f"Moved {file} to {processed_dir}")
-                shutil.rmtree(extract_to)
-                print(f"Deleted {extract_to}")
+                if output_version.get() == "exploded":
+                    process_images_exploded(extract_to, upscale_factor.get(), platform)
+                else:
+                    process_images_separate(extract_to, upscale_factor.get(), platform)
 
-            options_window.destroy()
+                if add_essential.get():
+                    add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
 
-        ttk.Button(options_window, text="Apply", command=apply_options, bootstyle="outline-primary").pack(pady=20)
+                if delete_extracted.get():
+                    import shutil
+                    processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
+                    for file in processed_files:
+                        shutil.move(os.path.join(extract_to, file), processed_dir)
+                        print(f"Moved {file} to {processed_dir}")
+                    shutil.rmtree(extract_to)
+                    print(f"Deleted {extract_to}")
 
-        options_window.transient(Tk().mainloop())
-        options_window.grab_set()
-        options_window.wait_window(options_window)
+                options_window.destroy()
 
-    show_options()
+            ttk.Button(options_window, text="Apply", command=apply_options, bootstyle="outline-primary").pack(pady=20)
+
+            options_window.transient(Tk().mainloop())
+            options_window.grab_set()
+            options_window.wait_window(options_window)
+
+        show_options()
+
+    main_window.destroy()
 
 if __name__ == "__main__":
     main()
