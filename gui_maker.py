@@ -114,35 +114,39 @@ def process_images_separate(extract_to, upscale_factor, platform):
     scale_factor_gui = gui_image.width / 256
     scale_factor_icons = icons_image.width / 256
 
-    # Crop specific sections from gui.png
+    # Crop specific sections from gui.png with descriptive names
     gui_crops = [
-        (0, 0, 40, 23),   # first 2 hotbar boxes
-        (160, 0, 183, 23), # end hotbar box
-        (1, 23, 23, 45)   # selector
+        ((0, 0, 40, 23), 'hotbar_start'),  # first 2 hotbar boxes
+        ((160, 0, 183, 23), 'hotbar_end'), # end hotbar box
+        ((1, 23, 23, 45), 'selector')     # selector
     ]
-    for i, (left, upper, right, lower) in enumerate(gui_crops):
-        crop_and_save(gui_image, 
+    cropped_gui_images = []
+    for (left, upper, right, lower), name in gui_crops:
+        cropped_image = crop_and_save(gui_image, 
                       (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui),
-                      os.path.join(extract_to, f'gui_cropped_{i+1}.png'), upscale_factor)
+                      os.path.join(extract_to, f'{name}.png'), upscale_factor)
+        cropped_gui_images.append(cropped_image)
 
-    # Crop specific sections from icons.png
+    # Crop specific sections from icons.png with descriptive names
     icons_crops = [
-        (52, 0, 61, 9),   # Full Heart
-        (61, 0, 67, 9),   # Half Heart
-        (16, 9, 25, 18),  # Armour Background
-        (25, 9, 34, 18),  # Half Armour
-        (34, 9, 43, 18),  # Full Armour
-        (52, 9, 61, 18),  # Heart Background
-        (52, 27, 62, 36), # Full Hunger
-        (62, 27, 70, 36), # Half Hunger
-        (16, 27, 25, 36), # Hunger Background
-        (0, 64, 182, 69), # XP bar background
-        (0, 69, 182, 74)  # XP bar
+        ((52, 0, 61, 9), 'full_heart'),      # Full Heart
+        ((61, 0, 67, 9), 'half_heart'),      # Half Heart
+        ((16, 9, 25, 18), 'armor_background'), # Armour Background
+        ((25, 9, 34, 18), 'half_armor'),     # Half Armour
+        ((34, 9, 43, 18), 'full_armor'),     # Full Armour
+        ((52, 9, 61, 18), 'heart_background'), # Heart Background
+        ((52, 27, 62, 36), 'full_hunger'),   # Full Hunger
+        ((62, 27, 70, 36), 'half_hunger'),   # Half Hunger
+        ((16, 27, 25, 36), 'hunger_background'), # Hunger Background
+        ((0, 64, 182, 69), 'xp_bar_background'), # XP bar background
+        ((0, 69, 182, 74), 'xp_bar')         # XP bar
     ]
-    for i, (left, upper, right, lower) in enumerate(icons_crops):
-        crop_and_save(icons_image, 
+    cropped_icons_images = []
+    for (left, upper, right, lower), name in icons_crops:
+        cropped_image = crop_and_save(icons_image, 
                       (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons),
-                      os.path.join(extract_to, f'icons_cropped_{i+1}.png'), upscale_factor)
+                      os.path.join(extract_to, f'{name}.png'), upscale_factor)
+        cropped_icons_images.append(cropped_image)
 
     print(f"Separate images saved to {extract_to}")
 
