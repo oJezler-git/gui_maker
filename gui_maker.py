@@ -183,9 +183,8 @@ def process_images_exploded(extract_to, upscale_factor, platform):
     ]
     cropped_gui_images = []
     for left, upper, right, lower in gui_crops:
-        cropped_gui_images.append(crop_and_save(gui_image,
-            (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui),
-            os.path.join(extract_to, f'gui_cropped_exploded_{left}_{upper}_{right}_{lower}.png'), upscale_factor))
+        cropped_gui_images.append(gui_image.crop(
+            (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui)))
 
     # Crop specific sections from icons.png
     icons_crops = [
@@ -203,9 +202,8 @@ def process_images_exploded(extract_to, upscale_factor, platform):
     ]
     cropped_icons_images = []
     for left, upper, right, lower in icons_crops:
-        cropped_icons_images.append(crop_and_save(icons_image,
-            (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons),
-            os.path.join(extract_to, f'icons_cropped_exploded_{left}_{upper}_{right}_{lower}.png'), upscale_factor))
+        cropped_icons_images.append(icons_image.crop(
+            (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons)))
 
     # Calculate total width and height for the new image
     total_width = sum(img.width for img in cropped_gui_images + cropped_icons_images) + (len(cropped_gui_images) + len(cropped_icons_images) - 1) * 5
@@ -257,7 +255,8 @@ def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
         'iron_pickaxe.png', 
         'apple_golden.png', 
         'ender_pearl.png',
-        'fireball.png' # lol bltck found the easter egg
+        'fireball.png',
+        'fire_charge.png'
     ]
     
     for item in essential_items:
