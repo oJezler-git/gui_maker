@@ -307,6 +307,42 @@ def apply_options():
 
     options_window.destroy()
 
+def choose_selector_slot(process_images_prebuild_callback):
+    selector_window = ttk.Toplevel()
+    selector_window.title("Choose Selector Slot")
+    selector_window.geometry('400x300')
+
+    slot_choice = StringVar(value="1")
+
+    ttk.Label(selector_window, text="Choose a slot for the selector (1, 2, 3) or 'none':").pack(pady=20)
+
+    ttk.Radiobutton(selector_window, text="Slot 1", variable=slot_choice, value="1").pack(anchor='w', padx=20)
+    ttk.Radiobutton(selector_window, text="Slot 2", variable=slot_choice, value="2").pack(anchor='w', padx=20)
+    ttk.Radiobutton(selector_window, text="Slot 3", variable=slot_choice, value="3").pack(anchor='w', padx=20)
+    ttk.Radiobutton(selector_window, text="None", variable=slot_choice, value="none").pack(anchor='w', padx=20)
+
+    def confirm_slot_choice():
+        chosen_slot = slot_choice.get()
+        if chosen_slot == "none":
+            selector_position = None
+        elif chosen_slot == "1":
+            selector_position = (50, 100)
+        elif chosen_slot == "2":
+            selector_position = (70, 100)
+        elif chosen_slot == "3":
+            selector_position = (90, 100)
+        else:
+            selector_position = None
+
+        selector_window.destroy()
+        process_images_prebuild_callback(selector_position)
+
+    ttk.Button(selector_window, text="Confirm", command=confirm_slot_choice).pack(pady=20)
+
+    selector_window.transient(Tk().mainloop())
+    selector_window.grab_set()
+    selector_window.wait_window(selector_window)
+
 def main():
     global file_path, pack_name
 
