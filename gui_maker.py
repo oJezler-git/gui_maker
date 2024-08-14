@@ -276,7 +276,6 @@ def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
 
 
 def apply_options():
-    # create a new directory for processed files
     processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
     os.makedirs(processed_dir, exist_ok=True)
 
@@ -286,26 +285,44 @@ def apply_options():
         print("Error: Unable to detect the platform (Bedrock or Java).")
         return
 
+    def process_images_prebuild_with_slot(selector_position):
+        process_images_prebuild(extract_to, upscale_factor.get(), platform, selector_position)
+        
+        # Ensure add_essential_items is called after processing images for prebuild
+        if add_essential.get():
+            add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
+
+        # Cleanup if needed
+        if delete_extracted.get():
+            cleanup_extracted_files(extract_to, processed_dir)
+
     if output_version.get() == "exploded":
         process_images_exploded(extract_to, upscale_factor.get(), platform)
+    elif output_version.get() == "split-build":
+        process_images_split_build(extract_to, upscale_factor.get(), platform)
+    elif output_version.get() == "prebuild":
+        choose_selector_slot(process_images_prebuild_with_slot)
     else:
         process_images_separate(extract_to, upscale_factor.get(), platform)
 
-    if add_essential.get():
-        add_essential_items(extract_to, upscale_factor.get(), processed_dir)
+        # Call add_essential_items for non-prebuild options
+        if add_essential.get():
+            add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
 
-    if delete_extracted.get():
-        import shutil
-        # Move processed files to the new directory
-        processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
-        for file in processed_files:
-            shutil.move(os.path.join(extract_to, file), processed_dir)
-            print(f"Moved {file} to {processed_dir}")
-
-        shutil.rmtree(extract_to)
-        print(f"Deleted {extract_to}")
+        # Cleanup if needed
+        if delete_extracted.get():
+            cleanup_extracted_files(extract_to, processed_dir)
 
     options_window.destroy()
+
+def cleanup_extracted_files(extract_to, processed_dir):
+    import shutil
+    processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
+    for file in processed_files:
+        shutil.move(os.path.join(extract_to, file), processed_dir)
+        print(f"Moved {file} to {processed_dir}")
+    shutil.rmtree(extract_to)
+    print(f"Deleted {extract_to}")
 
 def choose_selector_slot(process_images_prebuild_callback):
     selector_window = ttk.Toplevel()
