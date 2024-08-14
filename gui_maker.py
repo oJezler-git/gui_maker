@@ -274,6 +274,139 @@ def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
         else:
             print(f"Error: {item} not found.")
 
+def process_images_prebuild(extract_to, upscale_factor, platform, selector_position):
+    if platform == 'bedrock':
+        gui_filename = 'gui.png'
+        icons_filename = 'icons.png'
+        gui_path = find_file(extract_to, os.path.join('textures', 'gui'), gui_filename)
+        icons_path = find_file(extract_to, os.path.join('textures', 'gui'), icons_filename)
+    elif platform == 'java':
+        gui_filename = 'widgets.png'
+        icons_filename = 'icons.png'
+        gui_path = find_file(extract_to, os.path.join('assets', 'minecraft', 'textures', 'gui'), gui_filename)
+        icons_path = find_file(extract_to, os.path.join('assets', 'minecraft', 'textures', 'gui'), icons_filename)
+    else:
+        print("Error: Could not determine platform type.")
+        return
+
+    if not gui_path:
+        print(f"Error: {gui_filename} not found.")
+        return
+    if not icons_path:
+        print(f"Error: {icons_filename} not found.")
+        return
+
+    gui_image = Image.open(gui_path).convert('RGBA')
+    icons_image = Image.open(icons_path).convert('RGBA')
+
+    # Calculate scaling factor based on the image size
+    scale_factor_gui = gui_image.width / 256
+    scale_factor_icons = icons_image.width / 256
+
+    # Crop specific sections from gui.png
+    gui_crops = [
+        (0, 0, 40, 23),   # first 2 hotbar boxes
+        (160, 0, 183, 23), # end hotbar box
+        (1, 23, 23, 45)   # selector
+    ]
+    cropped_gui_images = []
+    for left, upper, right, lower in gui_crops:
+        cropped_gui_images.append(gui_image.crop(
+            (left * scale_factor_gui, upper * scale_factor_gui, right * scale_factor_gui, lower * scale_factor_gui)))
+
+    # Crop specific sections from icons.png
+    icons_crops = [
+        (52, 0, 61, 9),   # Full Heart
+        (61, 0, 66, 9),   # Half Heart
+        (16, 9, 25, 18),  # Armour Background
+        (25, 9, 34, 18),  # Half Armour
+        (34, 9, 43, 18),  # Full Armour
+        (52, 9, 61, 18),  # Heart Background
+        (52, 27, 62, 36), # Full Hunger
+        (62, 27, 70, 36), # Half Hunger
+        (16, 27, 25, 36), # Hunger Background
+        (0, 64, 182, 69), # XP bar background
+        (0, 69, 182, 74),  # XP bar
+        (151, 64, 182, 69), # Half XP bar background
+        (0, 69, 34, 74) # Half XP bar
+
+    ]
+    cropped_icons_images = []
+    for left, upper, right, lower in icons_crops:
+        cropped_icons_images.append(icons_image.crop(
+            (left * scale_factor_icons, upper * scale_factor_icons, right * scale_factor_icons, lower * scale_factor_icons)))
+        
+    
+    # Create a new image for the prebuild
+    processed_image = Image.new('RGBA', (200, 150), (255, 255, 255, 0))
+
+    # Pasting images with alpha compositing to preserve transparency
+    def paste_with_alpha(base, overlay, position):
+        temp_image = Image.new('RGBA', base.size, (255, 255, 255, 0))
+        temp_image.paste(overlay, position)
+        return Image.alpha_composite(base, temp_image)
+
+    processed_image = paste_with_alpha(processed_image, cropped_gui_images[0], (50, 100))  # First 2 hotbar boxes
+    processed_image = paste_with_alpha(processed_image, cropped_gui_images[1], (90, 100))  # End hotbar box
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[0], (50, 84))  # Full Heart
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[0], (60, 84))
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[5], (71, 84))  # Heart Background
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[1], (70, 84))  # Half Heart
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[2], (70, 74))  # Armour Background
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[3], (70, 74))  # Half Armour
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[4], (60, 74))  # Full Armour
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[4], (50, 74))
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[8], (85, 84))  # Hunger Background
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[7], (86, 84))  # Half Hunger
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[6], (95, 84))  # Full Hunger
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[6], (105, 84))
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[11], (82, 94))  # XP bar background
+    processed_image = paste_with_alpha(processed_image, cropped_icons_images[12], (50, 94))  # XP bar 
+
+    if selector_position:
+        print(f"Pasting selector image at position {selector_position}")
+        processed_image = paste_with_alpha(processed_image, cropped_gui_images[2], selector_position) # the selector
+
+    new_size = (int(processed_image.width * upscale_factor), int(processed_image.height * upscale_factor))
+    upscale_processed_image = processed_image.resize(new_size, Image.NEAREST)
+
+    output_path = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}', 'processed_gui_prebuild.png')
+    upscale_processed_image.save(output_path)
+
+    print(f"Prebuild GUI saved to {output_path}")
+
+def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
+    essential_items_dir = os.path.join(processed_dir, 'essential_items')
+    os.makedirs(essential_items_dir, exist_ok=True)
+
+    if platform == 'bedrock':
+        target_dir = os.path.join('textures', 'items')
+    elif platform == 'java':
+        target_dir = os.path.join('assets', 'minecraft', 'textures', 'item')
+    else:
+        print("Error: Unsupported platform.")
+        return
+
+    essential_items = [
+        'bow_pulling_0.png', 
+        'diamond_sword.png', 
+        'diamond_pickaxe.png', 
+        'iron_pickaxe.png', 
+        'apple_golden.png', 
+        'ender_pearl.png',
+        'fireball.png',
+        'fire_charge.png'
+    ]
+    
+    for item in essential_items:
+        item_path = find_file(extract_to, target_dir, item)
+        if item_path:
+            item_image = Image.open(item_path)
+            crop_and_save(item_image, (0, 0, item_image.width, item_image.height), os.path.join(essential_items_dir, f'essential_{item}'), upscale_factor)
+        else:
+            print(f"Error: {item} not found.")
+
+
 
 def apply_options():
     processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
