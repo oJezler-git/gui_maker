@@ -307,7 +307,7 @@ def process_images_split_build(extract_to, upscale_factor, platform):
         
     
     # Create a new image for the prebuild
-    processed_image = Image.new('RGBA', (200, 150), (255, 255, 255, 0))
+    processed_image = Image.new('RGBA', (500, 150), (255, 255, 255, 0))
 
     # Pasting images with alpha compositing to preserve transparency
     def paste_with_alpha(base, overlay, position):
@@ -597,7 +597,7 @@ def main():
             options_window.geometry('600x500')
 
             # Variables
-            output_version = StringVar(value="prebuild")
+            output_version = StringVar(value="separate")
             upscale_factor = IntVar(value=8)
             delete_extracted = IntVar(value=1)
             add_essential = IntVar(value=0)
@@ -606,16 +606,16 @@ def main():
             ttk.Label(options_window, text="Choose Output Version:").pack(anchor='w', pady=10, padx=10)
             ttk.Radiobutton(options_window, text="Exploded (Exploded Diagram, everything is exported to one PNG.)", variable=output_version, value="exploded", bootstyle="primary").pack(anchor='w', padx=20)
             ttk.Radiobutton(options_window, text="Separate (Separated, everything is exported into separate individual PNGs.)", variable=output_version, value="separate", bootstyle="primary").pack(anchor='w', padx=20)
-            ttk.Radiobutton(options_window, text="Splitbuild (Made GUI but with icons seperated for layer styles.)", variable=output_version, value="split-build", bootstyle="primary").pack(anchor='w', padx=20)
-            ttk.Radiobutton(options_window, text="Prebuild (Fully made GUI.)", variable=output_version, value="prebuild", bootstyle="primary").pack(anchor='w', padx=20)
+            ttk.Radiobutton(options_window, text="Splitbuild (Made GUI but with icons seperated. EXPERIMENTAL LIMITED TO 16x PACKS)", variable=output_version, value="split-build", bootstyle="primary").pack(anchor='w', padx=20)
+            ttk.Radiobutton(options_window, text="Prebuild (Fully made GUI. EXPERIMENTAL, NOT RECOMMENDED)", variable=output_version, value="prebuild", bootstyle="primary").pack(anchor='w', padx=20)
 
             ttk.Label(options_window, text="Upscale Factor:").pack(anchor='w', pady=10, padx=10)
             upscale_options = [1, 2, 4, 8]
             for option in upscale_options:
                 ttk.Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option).pack(anchor='w', padx=20)
 
-            ttk.Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted).pack(anchor='w', pady=10, padx=10)
-            ttk.Checkbutton(options_window, text="Add Essential Items", variable=add_essential).pack(anchor='w', padx=10)
+            ttk.Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted, bootstyle="success").pack(anchor='w', pady=10, padx=10)
+            ttk.Checkbutton(options_window, text="Add Essential Items (Bow, Sword, Pickaxe, Gapple, Pearl)", variable=add_essential, bootstyle="success").pack(anchor='w', padx=10)
 
             def apply_options():
                 processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
