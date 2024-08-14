@@ -342,24 +342,25 @@ def main():
             options_window.geometry('600x500')
 
             # Variables
-            output_version = StringVar(value="separate")
-            upscale_factor = IntVar(value=1)
-            delete_extracted = IntVar(value=0)
+            output_version = StringVar(value="prebuild")
+            upscale_factor = IntVar(value=8)
+            delete_extracted = IntVar(value=1)
             add_essential = IntVar(value=0)
 
             # Widgets with modern styling and colors
             ttk.Label(options_window, text="Choose Output Version:").pack(anchor='w', pady=10, padx=10)
-            ttk.Radiobutton(options_window, text="Exploded (Exploded Diagram, everything is exported to one PNG)", variable=output_version, value="exploded", bootstyle="primary").pack(anchor='w', padx=20)
-            ttk.Radiobutton(options_window, text="Separate (Seperated, everything is exported into speratate individual PNGs)", variable=output_version, value="separate", bootstyle="primary").pack(anchor='w', padx=20)
+            ttk.Radiobutton(options_window, text="Exploded (Exploded Diagram, everything is exported to one PNG.)", variable=output_version, value="exploded", bootstyle="primary").pack(anchor='w', padx=20)
+            ttk.Radiobutton(options_window, text="Separate (Separated, everything is exported into separate individual PNGs.)", variable=output_version, value="separate", bootstyle="primary").pack(anchor='w', padx=20)
+            ttk.Radiobutton(options_window, text="Splitbuild (Made GUI but with icons seperated for layer styles.)", variable=output_version, value="split-build", bootstyle="primary").pack(anchor='w', padx=20)
+            ttk.Radiobutton(options_window, text="Prebuild (Fully made GUI.)", variable=output_version, value="prebuild", bootstyle="primary").pack(anchor='w', padx=20)
 
             ttk.Label(options_window, text="Upscale Factor:").pack(anchor='w', pady=10, padx=10)
-            upscale_options = [1, 2, 3, 4, 8]
+            upscale_options = [1, 2, 4, 8]
             for option in upscale_options:
-                ttk.Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option, bootstyle="info").pack(anchor='w', padx=20)
+                ttk.Radiobutton(options_window, text=str(option), variable=upscale_factor, value=option).pack(anchor='w', padx=20)
 
-            ttk.Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted, bootstyle="success").pack(anchor='w', pady=10, padx=10)
-
-            ttk.Checkbutton(options_window, text="Add Essential Items (Bow, Sword, Pickaxe, Gapple, Pearl)", variable=add_essential, bootstyle="success").pack(anchor='w', padx=10)
+            ttk.Checkbutton(options_window, text="Delete Extracted Pack (recommended)", variable=delete_extracted).pack(anchor='w', pady=10, padx=10)
+            ttk.Checkbutton(options_window, text="Add Essential Items", variable=add_essential).pack(anchor='w', padx=10)
 
             def apply_options():
                 processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
@@ -371,26 +372,31 @@ def main():
                     print("Error: Unable to detect the platform (Bedrock or Java).")
                     return
 
+                def process_images_prebuild_with_slot(selector_position):
+                    process_images_prebuild(extract_to, upscale_factor.get(), platform, selector_position)
+                    if delete_extracted.get():
+                        cleanup_extracted_files(extract_to, processed_dir)
+
                 if output_version.get() == "exploded":
                     process_images_exploded(extract_to, upscale_factor.get(), platform)
+                
+                elif output_version.get() == "split-build":
+                    process_images_split_build(extract_to, upscale_factor.get(), platform)
+
+                elif output_version.get() == "prebuild":
+                    choose_selector_slot(process_images_prebuild_with_slot)
                 else:
                     process_images_separate(extract_to, upscale_factor.get(), platform)
 
                 if add_essential.get():
                     add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
 
-                if delete_extracted.get():
-                    import shutil
-                    processed_files = [f for f in os.listdir(extract_to) if os.path.isfile(os.path.join(extract_to, f))]
-                    for file in processed_files:
-                        shutil.move(os.path.join(extract_to, file), processed_dir)
-                        print(f"Moved {file} to {processed_dir}")
-                    shutil.rmtree(extract_to)
-                    print(f"Deleted {extract_to}")
+                if output_version.get() != "prebuild" and delete_extracted.get():
+                    cleanup_extracted_files(extract_to, processed_dir)
 
                 options_window.destroy()
 
-            ttk.Button(options_window, text="Apply", command=apply_options, bootstyle="outline-primary").pack(pady=20)
+            ttk.Button(options_window, text="Apply", command=apply_options).pack(pady=20)
 
             options_window.transient(Tk().mainloop())
             options_window.grab_set()
@@ -402,3 +408,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
