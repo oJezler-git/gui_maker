@@ -1,3 +1,15 @@
+# THIS PROJECT IS BEING CONTINUED BY CACTI [here](https://github.com/notcacti/PackGUIMaker)
+Features
+Online: Online website does not require any installation (mobile support)
+Fast: Made with typescript
+Support: Supports ALL resolutions of texure packs
+Aesthetics: GUI (designed by me) is a lot better than the python tk windows
+
+
+
+
+
+
 # Minecraft Texture Pack GUI Maker
 
 This script extracts, processes, and modifies Minecraft texture packs to create GUI elements to help aid with thumbnail making process. It supports both Bedrock and Java edition texture packs.
