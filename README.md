@@ -6,7 +6,7 @@ Support: Supports ALL resolutions of texure packs
 Aesthetics: GUI (designed by me) is a lot better than the python tk windows
 
 
-
+# I think ill refactor my stupidly long spaghetti code soon 25/10/24
 
 
 
