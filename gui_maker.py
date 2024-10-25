@@ -477,7 +477,7 @@ def add_essential_items(extract_to, upscale_factor, processed_dir, platform):
             print(f"Error: {item} not found.")
 
 
-def apply_options():
+def apply_options(extract_to, file_path, pack_name, output_version, upscale_factor, delete_extracted, add_essential, options_window):
     processed_dir = os.path.join(os.path.dirname(file_path), f'GUI-Maker-{pack_name}')
     os.makedirs(processed_dir, exist_ok=True)
 
@@ -490,11 +490,11 @@ def apply_options():
     def process_images_prebuild_with_slot(selector_position):
         process_images_prebuild(extract_to, upscale_factor.get(), platform, selector_position)
         
-        # Ensure add_essential_items is called after processing images for prebuild
+        # Add essential items if selected
         if add_essential.get():
             add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
 
-        # Cleanup if needed
+        # Cleanup if selected
         if delete_extracted.get():
             cleanup_extracted_files(extract_to, processed_dir)
 
@@ -507,11 +507,11 @@ def apply_options():
     else:
         process_images_separate(extract_to, upscale_factor.get(), platform)
 
-        # Call add_essential_items for non-prebuild options
+        # Add essential items for non-prebuild options
         if add_essential.get():
             add_essential_items(extract_to, upscale_factor.get(), processed_dir, platform)
 
-        # Cleanup if needed
+        # Cleanup for non-prebuild options
         if delete_extracted.get():
             cleanup_extracted_files(extract_to, processed_dir)
 
